@@ -36,4 +36,4 @@ jobs:
           git config --local user.name "GitHub Action"
           git add data.json
           git commit -m "自動更新數據: $(date)" || exit 0
-          git push origin main
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git main
