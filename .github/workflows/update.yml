@@ -22,9 +22,8 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: 安裝必要的工具
-        run: pip install requests pandas
-
+      - name: 安裝必要的工具        
+        run: pip install requests pandas yfinance  # 👈 加入 yfinance
       - name: 執行抓取程式
         env:
           FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
