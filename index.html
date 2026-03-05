@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>許景翔的戰情室</title>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background: #0f172a; color: #f8fafc; }
+        .card { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        select, button { padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; cursor: pointer; font-size: 16px; margin-right: 10px; }
+        button.active { background: #3b82f6; border-color: #3b82f6; }
+        button.inactive { background: #334155; color: #94a3b8; }
+        .chart-container { height: 450px; width: 100%; margin-top: 10px; }
+        #chipchart { height: 250px; }
+        h2 { margin-top: 0; color: #3b82f6; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <select id="stockSelect" onchange="render()">
+            <option value="3030">3030 德律</option>
+            <option value="2330">2330 台積電</option>
+            <option value="3443">3443 創意</option>
+            <option value="1815">1815 富喬</option>
+            <option value="8358">8358 金居</option>
+            <option value="3661">3661 世芯-KY</option>
+            <option value="3529">3529 力旺</option>
+            <option value="6643">6643 M31</option>
+            <option value="2395">2395 研華</option>
+            <option value="6526">6526 達發</option>
+            <option value="7734">7734 群聯</option>
+        </select>
+        <button id="btn60" class="active" onclick="setMode('k60')">60分K</button>
+        <button id="btnDaily" class="inactive" onclick="setMode('daily')">日K</button>
+    </div>
+
+    <div class="card">
+        <h2 id="stockTitle">載入中...</h2>
+        <div id="kchart" class="chart-container"></div>
+        <div style="margin-top:20px; color:#94a3b8; font-weight: bold;">大戶比例走勢 (400張藍 / 1000張紅)</div>
+        <div id="chipchart" class="chart-container"></div>
+    </div>
+
+    <script>
+        let kChart, chipChart, currentMode = 'k60', rawData = {};
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('btn60').className = mode === 'k60' ? 'active' : 'inactive';
+            document.getElementById('btnDaily').className = mode === 'daily' ? 'active' : 'inactive';
+            render();
+        }
+
+        async function init() {
+            try {
+                // 自動抓取同資料夾下的 data.json
+                const res = await fetch('data.json');
+                rawData = await res.json();
+                render();
+            } catch (e) {
+                document.getElementById('stockTitle').innerText = "尚未找到數據，請確認 Actions 是否執行成功";
+            }
+        }
+
+        function render() {
+            const sid = document.getElementById('stockSelect').value;
+            const data = rawData[sid];
+            if (!data) return;
+
+            document.getElementById('stockTitle').innerText = `${sid} 戰情監控`;
+            document.getElementById('kchart').innerHTML = '';
+            document.getElementById('chipchart').innerHTML = '';
+
+            // 1. K線圖
+            kChart = LightweightCharts.createChart(document.getElementById('
