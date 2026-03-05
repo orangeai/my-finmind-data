@@ -1,0 +1,35 @@
+name: Daily Stock Data Update
+
+on:
+  schedule:
+    # 這裡設定執行時間：UTC 09:00 = 台灣時間 17:00
+    - cron: '0 9 * * 1-5'  # 1-5 代表週一至週五執行
+  workflow_dispatch:        # 這行讓你可以在 GitHub 網頁上手動點擊執行測試
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 檢查程式碼
+        uses: actions/checkout@v3
+
+      - name: 設定 Python 環境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: 安裝必要的工具
+        run: pip install requests pandas
+
+      - name: 執行抓取程式
+        env:
+          FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
+        run: python main.py
+
+      - name: 將最新的 JSON 存回 GitHub
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data.json
+          git commit -m "自動更新數據: $(date)" || exit 0
+          git push
