@@ -1,8 +1,9 @@
+HTML
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>許景翔的戰情室</title>
+    <title>許景翔的私房戰情室</title>
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background: #0f172a; color: #f8fafc; }
@@ -72,4 +73,28 @@
             document.getElementById('chipchart').innerHTML = '';
 
             // 1. K線圖
-            kChart = LightweightCharts.createChart(document.getElementById('
+            kChart = LightweightCharts.createChart(document.getElementById('kchart'), {
+                layout: { backgroundColor: '#1e293b', textColor: '#94a3b8' },
+                grid: { vertLines: { color: '#334155' }, horzLines: { color: '#334155' } },
+                timeScale: { timeVisible: true }
+            });
+            const candleSeries = kChart.addCandlestickSeries();
+            const kData = currentMode === 'k60' ? data.k60 : data.daily.map(d => ({
+                time: d.date, open: d.open, high: d.max, low: d.min, close: d.close
+            }));
+            candleSeries.setData(kData);
+
+            // 2. 籌碼圖
+            chipChart = LightweightCharts.createChart(document.getElementById('chipchart'), {
+                layout: { backgroundColor: '#1e293b', textColor: '#94a3b8' },
+                grid: { vertLines: { color: '#334155' }, horzLines: { color: '#334155' } }
+            });
+            const l400 = chipChart.addLineSeries({ color: '#3b82f6', title: '400張' });
+            const l1000 = chipChart.addLineSeries({ color: '#ef4444', title: '1000張' });
+            l400.setData(data.chips.map(d => ({ time: d.time, value: d.p400 })));
+            l1000.setData(data.chips.map(d => ({ time: d.time, value: d.p1000 })));
+        }
+        init();
+    </script>
+</body>
+</html>
