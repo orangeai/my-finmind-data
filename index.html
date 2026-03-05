@@ -15,7 +15,6 @@
         .chart-container { height: 450px; width: 100%; margin-top: 10px; }
         #chipchart { height: 250px; }
         h2 { margin-top: 0; color: #3b82f6; font-size: 1.5rem; }
-        @media (max-width: 600px) { .chart-container { height: 350px; } }
     </style>
 </head>
 <body>
@@ -60,7 +59,7 @@
 
         async function init() {
             try {
-                // 加入亂數參數防止瀏覽器快取舊資料
+                // 強制讀取最新檔案，避免瀏覽器快取舊資料
                 const res = await fetch('data.json?t=' + new Date().getTime());
                 rawData = await res.json();
                 render();
@@ -90,16 +89,16 @@
                 borderDownColor: '#22c55e', wickUpColor: '#ef4444', wickDownColor: '#22c55e'
             });
 
-            // 修正欄位對齊：FinMind 的日資料欄位是 max/min，HTML 需要 high/low
+            // 核心修正：對齊 Yahoo Finance 的欄位名稱
             const kData = currentMode === 'k60' ? data.k60 : data.daily.map(d => ({
                 time: d.date, 
                 open: d.open, 
-                high: d.max, 
-                low: d.min, 
+                high: d.max || d.high, // 相容 FinMind(max) 與 Yahoo(high)
+                low: d.min || d.low,   // 相容 FinMind(min) 與 Yahoo(low)
                 close: d.close
             }));
             
-            if (kData.length > 0) candleSeries.setData(kData);
+            candleSeries.setData(kData);
 
             // 2. 籌碼圖配置
             chipChart = LightweightCharts.createChart(document.getElementById('chipchart'), {
