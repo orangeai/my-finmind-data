@@ -1,44 +1,50 @@
-HTML
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>許景翔的私房戰情室</title>
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background: #0f172a; color: #f8fafc; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #0f172a; color: #f8fafc; }
         .card { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        select, button { padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; cursor: pointer; font-size: 16px; margin-right: 10px; }
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+        select, button { padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; cursor: pointer; font-size: 16px; }
         button.active { background: #3b82f6; border-color: #3b82f6; }
         button.inactive { background: #334155; color: #94a3b8; }
         .chart-container { height: 450px; width: 100%; margin-top: 10px; }
         #chipchart { height: 250px; }
-        h2 { margin-top: 0; color: #3b82f6; }
+        h2 { margin-top: 0; color: #3b82f6; font-size: 1.5rem; }
+        @media (max-width: 600px) { .chart-container { height: 350px; } }
     </style>
 </head>
 <body>
     <div class="card">
-        <select id="stockSelect" onchange="render()">
-            <option value="3030">3030 德律</option>
-            <option value="2330">2330 台積電</option>
-            <option value="3443">3443 創意</option>
-            <option value="1815">1815 富喬</option>
-            <option value="8358">8358 金居</option>
-            <option value="3661">3661 世芯-KY</option>
-            <option value="3529">3529 力旺</option>
-            <option value="6643">6643 M31</option>
-            <option value="2395">2395 研華</option>
-            <option value="6526">6526 達發</option>
-            <option value="7734">7734 群聯</option>
-        </select>
-        <button id="btn60" class="active" onclick="setMode('k60')">60分K</button>
-        <button id="btnDaily" class="inactive" onclick="setMode('daily')">日K</button>
+        <div class="controls">
+            <select id="stockSelect" onchange="render()">
+                <option value="3030">3030 德律</option>
+                <option value="2330">2330 台積電</option>
+                <option value="3443">3443 創意</option>
+                <option value="1815">1815 富喬</option>
+                <option value="8358">8358 金居</option>
+                <option value="3661">3661 世芯-KY</option>
+                <option value="3529">3529 力旺</option>
+                <option value="6643">6643 M31</option>
+                <option value="2395">2395 研華</option>
+                <option value="6526">6526 達發</option>
+                <option value="7734">7734 群聯</option>
+            </select>
+            <button id="btn60" class="active" onclick="setMode('k60')">60分K</button>
+            <button id="btnDaily" class="inactive" onclick="setMode('daily')">日K</button>
+        </div>
     </div>
 
     <div class="card">
         <h2 id="stockTitle">載入中...</h2>
         <div id="kchart" class="chart-container"></div>
-        <div style="margin-top:20px; color:#94a3b8; font-weight: bold;">大戶比例走勢 (400張藍 / 1000張紅)</div>
+        <div style="margin-top:20px; color:#94a3b8; font-weight: bold; font-size: 0.9rem;">
+            大戶比例走勢 <span style="color:#3b82f6">● 400張</span> <span style="color:#ef4444">● 1000張</span>
+        </div>
         <div id="chipchart" class="chart-container"></div>
     </div>
 
@@ -54,12 +60,12 @@ HTML
 
         async function init() {
             try {
-                // 自動抓取同資料夾下的 data.json
-                const res = await fetch('data.json');
+                // 加入亂數參數防止瀏覽器快取舊資料
+                const res = await fetch('data.json?t=' + new Date().getTime());
                 rawData = await res.json();
                 render();
             } catch (e) {
-                document.getElementById('stockTitle').innerText = "尚未找到數據，請確認 Actions 是否執行成功";
+                document.getElementById('stockTitle').innerText = "數據格式錯誤或尚未產出";
             }
         }
 
@@ -72,27 +78,42 @@ HTML
             document.getElementById('kchart').innerHTML = '';
             document.getElementById('chipchart').innerHTML = '';
 
-            // 1. K線圖
+            // 1. K線圖配置
             kChart = LightweightCharts.createChart(document.getElementById('kchart'), {
-                layout: { backgroundColor: '#1e293b', textColor: '#94a3b8' },
+                layout: { background: { color: '#1e293b' }, textColor: '#94a3b8' },
                 grid: { vertLines: { color: '#334155' }, horzLines: { color: '#334155' } },
-                timeScale: { timeVisible: true }
+                timeScale: { timeVisible: true, secondsVisible: false }
             });
-            const candleSeries = kChart.addCandlestickSeries();
-            const kData = currentMode === 'k60' ? data.k60 : data.daily.map(d => ({
-                time: d.date, open: d.open, high: d.max, low: d.min, close: d.close
-            }));
-            candleSeries.setData(kData);
 
-            // 2. 籌碼圖
+            const candleSeries = kChart.addCandlestickSeries({
+                upColor: '#ef4444', downColor: '#22c55e', borderUpColor: '#ef4444',
+                borderDownColor: '#22c55e', wickUpColor: '#ef4444', wickDownColor: '#22c55e'
+            });
+
+            // 修正欄位對齊：FinMind 的日資料欄位是 max/min，HTML 需要 high/low
+            const kData = currentMode === 'k60' ? data.k60 : data.daily.map(d => ({
+                time: d.date, 
+                open: d.open, 
+                high: d.max, 
+                low: d.min, 
+                close: d.close
+            }));
+            
+            if (kData.length > 0) candleSeries.setData(kData);
+
+            // 2. 籌碼圖配置
             chipChart = LightweightCharts.createChart(document.getElementById('chipchart'), {
-                layout: { backgroundColor: '#1e293b', textColor: '#94a3b8' },
+                layout: { background: { color: '#1e293b' }, textColor: '#94a3b8' },
                 grid: { vertLines: { color: '#334155' }, horzLines: { color: '#334155' } }
             });
-            const l400 = chipChart.addLineSeries({ color: '#3b82f6', title: '400張' });
-            const l1000 = chipChart.addLineSeries({ color: '#ef4444', title: '1000張' });
-            l400.setData(data.chips.map(d => ({ time: d.time, value: d.p400 })));
-            l1000.setData(data.chips.map(d => ({ time: d.time, value: d.p1000 })));
+
+            const l400 = chipChart.addLineSeries({ color: '#3b82f6', lineWidth: 2, title: '400張' });
+            const l1000 = chipChart.addLineSeries({ color: '#ef4444', lineWidth: 2, title: '1000張' });
+
+            if (data.chips && data.chips.length > 0) {
+                l400.setData(data.chips.map(d => ({ time: d.time, value: d.p400 })));
+                l1000.setData(data.chips.map(d => ({ time: d.time, value: d.p1000 })));
+            }
         }
         init();
     </script>
